@@ -8,15 +8,15 @@
 <link rel="stylesheet" href="../assets/css/main.css">
 </head>
 <body>
-<header class="app-header">
+<<header class="app-header">
   <div class="logo-wrap">
     <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
     <span class="logo-text">ACEXTRADER</span>
   </div>
 </header>
 <div class="sidebar"></div>
-<nav class="bottom-nav"></nav>
-<main class="main-content">
+<<nav class="bottom-nav"></nav>
+<<main class="main-content">
 <script>
 (async () => {
   if (!(await ACE.requireAuth())) return;
@@ -26,10 +26,6 @@
     ? '<span class="badge badge-green">Gate Met</span>'
     : '<span class="badge badge-orange">Deposit $500 to Activate</span>';
 })();
-function copyAddr(id) {
-  const el = document.getElementById(id);
-  ACE.copyToClipboard(el.textContent);
-}
 </script>
 
 <div class="animate-fade-up">
@@ -45,8 +41,8 @@ function copyAddr(id) {
         <span class="badge badge-green">Recommended</span>
       </div>
       <div class="qr-placeholder">QR CODE</div>
-      <div class="address-box mt-4" id="addr-trc20">TChv3f5g8a9kL2mNpQrStUvWxYzAbCdEfG
-        <button class="copy-btn" onclick="copyAddr('addr-trc20')">Copy</button>
+      <div class="address-box mt-4" id="addr-trc20">TY1rjXKoLM4MKUmUMAJNaqngxdXAUQDrUG
+        <button class="copy-btn" onclick="ACE.copyToClipboard('TY1rjXKoLM4MKUmUMAJNaqngxdXAUQDrUG')">Copy</button>
       </div>
       <div class="fs-12 text-muted mt-2 text-center">Lowest network fees. Use TronLink or any TRC20 wallet.</div>
     </div>
@@ -57,8 +53,8 @@ function copyAddr(id) {
         <span class="badge badge-blue">Ethereum</span>
       </div>
       <div class="qr-placeholder">QR CODE</div>
-      <div class="address-box mt-4" id="addr-erc20">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
-        <button class="copy-btn" onclick="copyAddr('addr-erc20')">Copy</button>
+      <div class="address-box mt-4" id="addr-erc20">0x6420440fe3052422134229ff5ac904ec1aadf882
+        <button class="copy-btn" onclick="ACE.copyToClipboard('0x6420440fe3052422134229ff5ac904ec1aadf882')">Copy</button>
       </div>
       <div class="fs-12 text-muted mt-2 text-center">Higher gas fees. Use MetaMask or any ERC20 wallet.</div>
     </div>
@@ -69,8 +65,8 @@ function copyAddr(id) {
         <span class="badge badge-orange">Native</span>
       </div>
       <div class="qr-placeholder">QR CODE</div>
-      <div class="address-box mt-4" id="addr-btc">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
-        <button class="copy-btn" onclick="copyAddr('addr-btc')">Copy</button>
+      <div class="address-box mt-4" id="addr-btc">1M4CxHqAhCeWQnoF3HgmzhS4sxKgDWwF1g
+        <button class="copy-btn" onclick="ACE.copyToClipboard('1M4CxHqAhCeWQnoF3HgmzhS4sxKgDWwF1g')">Copy</button>
       </div>
       <div class="fs-12 text-muted mt-2 text-center">Native SegWit address. Use any Bitcoin wallet.</div>
     </div>
