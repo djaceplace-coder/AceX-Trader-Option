@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Wallets — Acextraderoption</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">ACEXTRADER</span>
+  </div>
+</header>
+<div class="sidebar"></div>
+<nav class="bottom-nav"></nav>
+<main class="main-content">
+<script>
+(async () => {
+  if (!(await ACE.requireAuth())) return;
+  const profile = await ACE.getProfile();
+  const { data: wallets } = await supabase.from('wallets').select('*').eq('user_id', profile.id);
+  const container = document.getElementById('wallet-grid');
+  if (!wallets || wallets.length === 0) {
+    container.innerHTML = '<div class="text-muted">No wallets found.</div>';
+    return;
+  }
+  container.innerHTML = wallets.map(w => `
+    <div class="card card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="icon" style="width:40px;height:40px;border-radius:12px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+            ${w.asset === 'BTC' ? '₿' : '₮'}
+          </div>
+          <div>
+            <div class="fw-700">${w.asset}</div>
+            <div class="fs-12 text-muted">Wallet</div>
+          </div>
+        </div>
+        <span class="badge badge-${w.withdrawal_unlocked ? 'green' : 'red'}">${w.withdrawal_unlocked ? 'Unlocked' : 'Locked'}</span>
+      </div>
+      <div class="balance-display" style="font-size:1.5rem;margin-bottom:0.25rem;">${w.balance.toLocaleString()} <span style="font-size:0.875rem;color:var(--text-muted);">${w.asset}</span></div>
+      <div class="fs-12 text-muted">≈ ${ACE.formatCurrency(w.total_portfolio_usd)}</div>
+      <div class="divider"></div>
+      <div class="flex gap-2">
+        <a href="deposit.html" class="btn btn-sm btn-success" style="flex:1">Deposit</a>
+        <a href="withdraw.html" class="btn btn-sm btn-danger" style="flex:1">Withdraw</a>
+      </div>
+    </div>
+  `).join('');
+})();
+</script>
+
+<div class="animate-fade-up">
+  <h2 class="fs-24 fw-700 mb-4">My Wallets</h2>
+  <div id="wallet-grid" class="grid grid-2 gap-4">
+    <div class="text-muted">Loading wallets...</div>
+  </div>
+</div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
