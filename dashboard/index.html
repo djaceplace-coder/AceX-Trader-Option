@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Dashboard — Acextraderoption</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">ACEXTRADER</span>
+  </div>
+</header>
+<div class="sidebar"></div>
+<nav class="bottom-nav"></nav>
+<main class="main-content">
+<script>
+(async () => {
+  if (!(await ACE.requireAuth())) return;
+  const profile = await ACE.getProfile();
+  document.getElementById('greeting').textContent = 'Welcome, ' + (profile?.full_name || 'Trader');
+  document.getElementById('role-badge').textContent = profile?.role === 'admin' ? 'ADMIN' : 'TRADER';
+  document.getElementById('role-badge').className = profile?.role === 'admin' ? 'badge badge-gold' : 'badge badge-blue';
+
+  const { data: wallets } = await supabase.from('wallets').select('*').eq('user_id', profile.id);
+  const total = (wallets || []).reduce((s, w) => s + (w.total_portfolio_usd || 0), 0);
+  const available = (wallets || []).reduce((s, w) => s + ((w.balance || 0) * (w.asset === 'USDT' ? 1 : 30000)), 0);
+  document.getElementById('total-balance').textContent = ACE.formatCurrency(total);
+  document.getElementById('avail-balance').textContent = ACE.formatCurrency(available);
+
+  const { data: bots } = await supabase.from('bots').select('*').eq('user_id', profile.id);
+  document.getElementById('bot-count').textContent = (bots || []).length;
+  const pnl = (bots || []).reduce((s, b) => s + (b.total_pnl || 0), 0);
+  document.getElementById('bot-pnl').textContent = (pnl >= 0 ? '+' : '') + ACE.formatCurrency(pnl);
+  document.getElementById('bot-pnl').className = 'fs-24 fw-700 ' + (pnl >= 0 ? 'text-green' : 'text-red');
+
+  const { data: txs } = await supabase.from('transactions').select('*').eq('user_id', profile.id).order('created_at', { ascending: false });
+  const tbody = document.getElementById('tx-body');
+  tbody.innerHTML = (txs || []).slice(0, 5).map(tx => `
+    <tr>
+      <td>${tx.type.replace('_', ' ').toUpperCase()}</td>
+      <td>${tx.asset}</td>
+      <td class="${tx.type === 'withdraw' || tx.type === 'loan_remittance' ? 'text-red' : 'text-green'}">${tx.type === 'withdraw' || tx.type === 'loan_remittance' ? '-' : '+'}${tx.amount}</td>
+      <td><span class="badge badge-${tx.status === 'complete' ? 'green' : tx.status === 'pending' ? 'orange' : 'blue'}">${tx.status}</span></td>
+    </tr>
+  `).join('');
+})();
+</script>
+
+<div class="animate-fade-up">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 id="greeting" class="fs-24 fw-700">Welcome, Trader</h2>
+      <p class="fs-12 text-muted mt-1">Portfolio Overview</p>
+    </div>
+    <span id="role-badge" class="badge badge-blue">TRADER</span>
+  </div>
+
+  <div class="grid grid-2 gap-4 mb-6">
+    <div class="card card-gold">
+      <div class="balance-label mb-2">Total Portfolio Value</div>
+      <div id="total-balance" class="balance-display">$0.00</div>
+      <div class="fs-12 text-muted mt-2">Withdrawal unlocks at $5,000</div>
+    </div>
+    <div class="card">
+      <div class="balance-label mb-2">Available Balance</div>
+      <div id="avail-balance" class="balance-display" style="font-size:1.5rem;">$0.00</div>
+      <div class="fs-12 text-muted mt-2">Across all wallets</div>
+    </div>
+  </div>
+
+  <div class="grid grid-4 gap-4 mb-6">
+    <div class="card text-center">
+      <div class="fs-12 text-muted mb-1">Active Bots</div>
+      <div id="bot-count" class="fs-24 fw-700 text-gold">0</div>
+    </div>
+    <div class="card text-center">
+      <div class="fs-12 text-muted mb-1">Bot PnL</div>
+      <div id="bot-pnl" class="fs-24 fw-700 text-green">$0.00</div>
+    </div>
+    <div class="card text-center">
+      <div class="fs-12 text-muted mb-1">Deposit Gate</div>
+      <div class="fs-24 fw-700 text-gold">$500</div>
+    </div>
+    <div class="card text-center">
+      <div class="fs-12 text-muted mb-1">Withdrawal Lock</div>
+      <div class="fs-24 fw-700 text-red">$5K</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2 gap-4 mb-6">
+    <a href="../wallet/deposit.html" class="btn btn-success btn-lg">Deposit Funds</a>
+    <a href="../wallet/withdraw.html" class="btn btn-danger btn-lg">Withdraw</a>
+    <a href="../bots/" class="btn btn-primary btn-lg">Manage Bots</a>
+    <a href="../loans/" class="btn btn-secondary btn-lg">Apply for Loan</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Recent Activity</div>
+      <a href="../wallet/" class="fs-12 text-gold" style="text-decoration:none;">View All →</a>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Type</th><th>Asset</th><th>Amount</th><th>Status</th></tr>
+        </thead>
+        <tbody id="tx-body">
+          <tr><td colspan="4" class="text-muted text-center">No recent transactions</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
