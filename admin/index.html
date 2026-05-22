@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Admin — Acextraderoption</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">ACEXTRADER</span>
+  </div>
+</header>
+<div class="sidebar"></div>
+<nav class="bottom-nav"></nav>
+<main class="main-content">
+<script>
+(async () => {
+  if (!(await ACE.requireAdmin())) return;
+
+  const { data: profiles } = await supabase.from('profiles').select('*');
+  const { data: txs } = await supabase.from('transactions').select('*');
+  const { data: loans } = await supabase.from('loans').select('*');
+
+  const totalUsers = (profiles || []).length;
+  const totalDeposited = (profiles || []).reduce((s, p) => s + (p.total_deposited_usd || 0), 0);
+  const pendingWithdrawals = (txs || []).filter(t => t.type === 'withdraw' && t.status === 'pending').length;
+  const pendingLoans = (loans || []).filter(l => l.status === 'pending').length;
+
+  document.getElementById('stat-users').textContent = totalUsers;
+  document.getElementById('stat-deposits').textContent = ACE.formatCurrency(totalDeposited);
+  document.getElementById('stat-withdrawals').textContent = pendingWithdrawals;
+  document.getElementById('stat-loans').textContent = pendingLoans;
+
+  const usersBody = document.getElementById('users-body');
+  usersBody.innerHTML = (profiles || []).map(p => `
+    <tr>
+      <td>${p.full_name || '—'}</td>
+      <td>${p.email}</td>
+      <td><span class="badge badge-${p.kyc_status === 'verified' ? 'green' : 'orange'}">${p.kyc_status}</span></td>
+      <td><span class="badge badge-${p.deposit_gate_met ? 'green' : 'red'}">${p.deposit_gate_met ? 'Met' : 'Not Met'}</span></td>
+      <td><span class="badge badge-${p.role === 'admin' ? 'gold' : 'blue'}">${p.role}</span></td>
+      <td>${ACE.formatCurrency(p.total_deposited_usd)}</td>
+    </tr>
+  `).join('');
+
+  const withdrawBody = document.getElementById('withdraw-body');
+  const pendingTxs = (txs || []).filter(t => t.type === 'withdraw' && t.status === 'pending');
+  if (pendingTxs.length === 0) {
+    withdrawBody.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No pending withdrawals</td></tr>';
+  } else {
+    withdrawBody.innerHTML = pendingTxs.map(t => `
+      <tr>
+        <td>${t.id.slice(0,8)}</td>
+        <td>${t.asset}</td>
+        <td>${t.amount}</td>
+        <td>${t.tx_hash || '—'}</td>
+        <td><button class="btn btn-sm btn-success" onclick="approveTx('${t.id}')">Approve</button></td>
+      </tr>
+    `).join('');
+  }
+
+  const loanBody = document.getElementById('loan-body');
+  const pendingLoanList = (loans || []).filter(l => l.status === 'pending');
+  if (pendingLoanList.length === 0) {
+    loanBody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No pending loans</td></tr>';
+  } else {
+    loanBody.innerHTML = pendingLoanList.map(l => `
+      <tr>
+        <td>${l.package_name}</td>
+        <td>${ACE.formatCurrency(l.principal_usd)}</td>
+        <td>${ACE.formatCurrency(l.remittance_amount)}</td>
+        <td><span class="badge badge-${l.remittance_paid ? 'green' : 'red'}">${l.remittance_paid ? 'Paid' : 'Unpaid'}</span></td>
+        <td>${l.id.slice(0,8)}</td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="approveLoan('${l.id}')" ${!l.remittance_paid ? 'disabled style="opacity:0.5"' : ''}>Approve</button>
+          <button class="btn btn-sm btn-danger" onclick="rejectLoan('${l.id}')">Reject</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+})();
+
+async function approveTx(id) {
+  await supabase.from('transactions').update({ status: 'complete' }).eq('id', id);
+  ACE.showToast('Withdrawal approved', 'success');
+  setTimeout(() => location.reload(), 500);
+}
+
+async function approveLoan(id) {
+  await supabase.from('loans').update({ status: 'active' }).eq('id', id);
+  ACE.showToast('Loan approved and activated', 'success');
+  setTimeout(() => location.reload(), 500);
+}
+
+async function rejectLoan(id) {
+  await supabase.from('loans').update({ status: 'defaulted' }).eq('id', id);
+  ACE.showToast('Loan rejected', 'error');
+  setTimeout(() => location.reload(), 500);
+}
+</script>
+
+<div class="animate-fade-up">
+  <h2 class="fs-24 fw-700 mb-4">Admin Control</h2>
+
+  <div class="grid grid-4 gap-4 mb-6">
+    <div class="admin-stat">
+      <div class="fs-12 text-muted mb-1">Total Users</div>
+      <div id="stat-users" class="admin-stat-value">0</div>
+    </div>
+    <div class="admin-stat">
+      <div class="fs-12 text-muted mb-1">Total Deposited</div>
+      <div id="stat-deposits" class="admin-stat-value">$0</div>
+    </div>
+    <div class="admin-stat">
+      <div class="fs-12 text-muted mb-1">Pending Withdrawals</div>
+      <div id="stat-withdrawals" class="admin-stat-value">0</div>
+    </div>
+    <div class="admin-stat">
+      <div class="fs-12 text-muted mb-1">Pending Loans</div>
+      <div id="stat-loans" class="admin-stat-value">0</div>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">All Users</div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>KYC</th><th>Gate</th><th>Role</th><th>Deposited</th></tr>
+        </thead>
+        <tbody id="users-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">Pending Withdrawals</div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>ID</th><th>Asset</th><th>Amount</th><th>Address</th><th>Action</th></tr>
+        </thead>
+        <tbody id="withdraw-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card mb-6">
+    <div class="card-header">
+      <div class="card-title">Pending Loan Applications</div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Package</th><th>Principal</th><th>Remittance</th><th>Paid</th><th>User</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="loan-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title mb-4">Platform Deposit Addresses</div>
+    <div class="grid grid-1 gap-4" style="max-width:600px;">
+      <div class="address-box">TChv3f5g8a9kL2mNpQrStUvWxYzAbCdEfG
+        <button class="copy-btn" onclick="ACE.copyToClipboard('TChv3f5g8a9kL2mNpQrStUvWxYzAbCdEfG')">Copy</button>
+      </div>
+      <div class="address-box">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+        <button class="copy-btn" onclick="ACE.copyToClipboard('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb')">Copy</button>
+      </div>
+      <div class="address-box">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+        <button class="copy-btn" onclick="ACE.copyToClipboard('bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh')">Copy</button>
+      </div>
+    </div>
+    <div class="fs-12 text-muted mt-4">These addresses are used for account activation, withdrawal unlock, and loan remittances.</div>
+  </div>
+</div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
