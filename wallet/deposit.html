@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Deposit — Acextraderoption</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">ACEXTRADER</span>
+  </div>
+</header>
+<div class="sidebar"></div>
+<nav class="bottom-nav"></nav>
+<main class="main-content">
+<script>
+(async () => {
+  if (!(await ACE.requireAuth())) return;
+  const profile = await ACE.getProfile();
+  const gateMet = profile?.deposit_gate_met;
+  document.getElementById('gate-status').innerHTML = gateMet
+    ? '<span class="badge badge-green">Gate Met</span>'
+    : '<span class="badge badge-orange">Deposit $500 to Activate</span>';
+})();
+function copyAddr(id) {
+  const el = document.getElementById(id);
+  ACE.copyToClipboard(el.textContent);
+}
+</script>
+
+<div class="animate-fade-up">
+  <h2 class="fs-24 fw-700 mb-2">Deposit Funds</h2>
+  <p class="fs-14 text-muted mb-6">Send crypto to the addresses below. Deposits are verified on-chain before crediting your account.</p>
+
+  <div id="gate-status" class="mb-4"></div>
+
+  <div class="grid grid-1 gap-4" style="max-width:600px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">USDT (TRC20)</div>
+        <span class="badge badge-green">Recommended</span>
+      </div>
+      <div class="qr-placeholder">QR CODE</div>
+      <div class="address-box mt-4" id="addr-trc20">TChv3f5g8a9kL2mNpQrStUvWxYzAbCdEfG
+        <button class="copy-btn" onclick="copyAddr('addr-trc20')">Copy</button>
+      </div>
+      <div class="fs-12 text-muted mt-2 text-center">Lowest network fees. Use TronLink or any TRC20 wallet.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">USDT (ERC20)</div>
+        <span class="badge badge-blue">Ethereum</span>
+      </div>
+      <div class="qr-placeholder">QR CODE</div>
+      <div class="address-box mt-4" id="addr-erc20">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+        <button class="copy-btn" onclick="copyAddr('addr-erc20')">Copy</button>
+      </div>
+      <div class="fs-12 text-muted mt-2 text-center">Higher gas fees. Use MetaMask or any ERC20 wallet.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Bitcoin (BTC)</div>
+        <span class="badge badge-orange">Native</span>
+      </div>
+      <div class="qr-placeholder">QR CODE</div>
+      <div class="address-box mt-4" id="addr-btc">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+        <button class="copy-btn" onclick="copyAddr('addr-btc')">Copy</button>
+      </div>
+      <div class="fs-12 text-muted mt-2 text-center">Native SegWit address. Use any Bitcoin wallet.</div>
+    </div>
+  </div>
+
+  <div class="card mt-6" style="max-width:600px;">
+    <div class="flex items-start gap-3">
+      <div style="font-size:1.5rem;">⚠️</div>
+      <div>
+        <div class="fw-700 mb-1">Important</div>
+        <ul class="fs-14 text-muted" style="list-style:none;display:flex;flex-direction:column;gap:0.5rem;">
+          <li>• Minimum deposit for bot activation: <strong class="text-gold">$500</strong></li>
+          <li>• Withdrawal unlocks at portfolio value: <strong class="text-gold">$5,000</strong></li>
+          <li>• Send only the specified asset to each address. Wrong-chain sends are irreversible.</li>
+          <li>• Deposits require 3–6 network confirmations before crediting.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
