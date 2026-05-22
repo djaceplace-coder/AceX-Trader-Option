@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>Bots — Acextraderoption</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="logo-wrap">
+    <img src="../assets/img/logo.png" alt="Acextraderoption" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">ACEXTRADER</span>
+  </div>
+</header>
+<div class="sidebar"></div>
+<nav class="bottom-nav"></nav>
+<main class="main-content">
+<script>
+(async () => {
+  if (!(await ACE.requireAuth())) return;
+  const profile = await ACE.getProfile();
+  const gateMet = await ACE.checkDepositGate();
+
+  document.getElementById('gate-banner').innerHTML = gateMet
+    ? '<div class="badge badge-green">Deposit Gate Met — $500</div>'
+    : '<div class="badge badge-orange">Deposit $500 Required to Activate Bots</div>';
+
+  const { data: bots } = await supabase.from('bots').select('*').eq('user_id', profile.id);
+  const list = document.getElementById('bot-list');
+  if (!bots || bots.length === 0) {
+    list.innerHTML = '<div class="text-muted text-center py-8">No bots configured yet.</div>';
+  } else {
+    list.innerHTML = bots.map(b => `
+      <div class="card card-hover mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="icon" style="width:40px;height:40px;border-radius:12px;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🤖</div>
+            <div>
+              <div class="fw-700">${b.strategy.toUpperCase()} Bot</div>
+              <div class="fs-12 text-muted">ID: ${b.id.slice(0,8)}</div>
+            </div>
+          </div>
+          <span class="badge badge-${b.status === 'active' ? 'green' : b.status === 'paused' ? 'orange' : 'blue'}">${b.status}</span>
+        </div>
+        <div class="grid grid-3 gap-4 mb-4">
+          <div>
+            <div class="fs-12 text-muted">Capital</div>
+            <div class="fw-700">${ACE.formatCurrency(b.capital_allocated)}</div>
+          </div>
+          <div>
+            <div class="fs-12 text-muted">PnL</div>
+            <div class="fw-700 ${b.total_pnl >= 0 ? 'text-green' : 'text-red'}">${b.total_pnl >= 0 ? '+' : ''}${ACE.formatCurrency(b.total_pnl)}</div>
+          </div>
+          <div>
+            <div class="fs-12 text-muted">Fee Rate</div>
+            <div class="fw-700 text-gold">0.00%</div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          ${b.status !== 'active'
+            ? `<button class="btn btn-sm btn-success" onclick="activateBot('${b.id}')" ${!gateMet ? 'disabled style="opacity:0.5"' : ''}>Activate</button>`
+            : `<button class="btn btn-sm btn-secondary" onclick="toggleBot('${b.id}', 'paused')">Pause</button>`}
+          <button class="btn btn-sm btn-danger" onclick="toggleBot('${b.id}', 'stopped')">Stop</button>
+        </div>
+      </div>
+    `).join('');
+  }
+})();
+
+async function activateBot(id) {
+  const ok = await ACE.activateBot(id);
+  if (ok) setTimeout(() => location.reload(), 800);
+}
+
+async function toggleBot(id, status) {
+  await supabase.from('bots').update({ status }).eq('id', id);
+  ACE.showToast('Bot status updated to ' + status, 'success');
+  setTimeout(() => location.reload(), 600);
+}
+
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const session = await ACE.getSession();
+  if (!session) return;
+  const capital = parseFloat(document.getElementById('capital').value);
+  if (capital < 200) { ACE.showToast('Minimum capital is $200', 'error'); return; }
+  const { data, error } = await supabase.from('bots').insert({
+    user_id: session.user.id,
+    strategy: document.getElementById('strategy').value,
+    capital_allocated: capital,
+    status: 'inactive',
+    trading_fee_rate: 0,
+    total_pnl: 0
+  });
+  if (error) { ACE.showToast(error.message, 'error'); }
+  else { ACE.showToast('Bot created. Activate it from the list.', 'success'); setTimeout(() => location.reload(), 600); }
+});
+</script>
+
+<div class="animate-fade-up">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="fs-24 fw-700">My Bots</h2>
+      <p class="fs-12 text-muted">Zero-fee automated trading strategies</p>
+    </div>
+    <div id="gate-banner"></div>
+  </div>
+
+  <div id="bot-list" class="mb-6">
+    <div class="text-muted">Loading bots...</div>
+  </div>
+
+  <div class="card" style="max-width:500px;">
+    <div class="card-title mb-4">Create New Bot</div>
+    <form id="createForm">
+      <div class="input-group">
+        <label class="input-label">Strategy</label>
+        <select class="input" id="strategy">
+          <option value="dca">DCA (Dollar Cost Average)</option>
+          <option value="scalp">Scalp (High Frequency)</option>
+          <option value="swing">Swing (Trend Following)</option>
+          <option value="arbitrage">Arbitrage (Cross-Exchange)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Capital Allocation (USD)</label>
+        <input type="number" class="input" id="capital" placeholder="Min $200" min="200" step="any" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Create Bot</button>
+    </form>
+    <div class="fs-12 text-muted mt-4">Bots require the $500 deposit gate to be activated. No trading fees are charged by the platform.</div>
+  </div>
+</div>
+</main>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
